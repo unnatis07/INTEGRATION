@@ -1,0 +1,74 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import PIL
+from PIL import Image, ImageEnhance
+
+with open('/Users/vense03/nbtooth/plastic_percents1.txt', 'w') as f:
+    f.write('')
+
+orbit_number = 0
+picture_number = 0
+
+for x in range(4):
+    #adding filters
+    img_name = 'orbit'+str(orbit_number)+'_picture'+str(picture_number)+'typeLOW'
+    img = '/Users/vense03/nbtooth/'+img_name+'.jpg'
+    img = PIL.Image.open(img)
+
+    converter = ImageEnhance.Contrast(img)
+    img = converter.enhance(1.5)
+
+    #converter = ImageEnhance.Brightness(img)
+    #img = converter.enhance(1.5)
+
+    converter = ImageEnhance.Color(img)
+    img = converter.enhance(4)
+
+    converter = ImageEnhance.Sharpness(img)
+    img = converter.enhance(2)
+
+
+    img.save('/Users/vense03/Downloads/cubesat 2022_2/'+img_name+'_fix.jpeg')
+
+    img = cv2.imread('/Users/vense03/Downloads/cubesat 2022_2/'+img_name+'_fix.jpeg')
+
+    grid_RGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    grid_HSV = cv2.cvtColor(grid_RGB, cv2.COLOR_RGB2HSV)
+
+
+    #mask
+    #lower = np.array([90, 150, 50])
+    #upper = np.array([130, 255, 255])
+    lower = np.array([90, 50, 0])
+    upper = np.array([140, 255, 255])
+    mask = cv2.inRange(grid_HSV, lower, upper)
+
+    res = cv2.bitwise_and(grid_RGB, grid_RGB, mask=mask)
+
+    #kernel = np.ones((15,15),np.float32)/225
+    #res = cv2.filter2D(res,-1,kernel)
+
+    cv2.imwrite('/Users/vense03/Downloads/cubesat 2022_2/'+img_name+'_mask.jpeg', res)
+
+
+    #binary
+    res2 = cv2.imread('/Users/vense03/Downloads/cubesat 2022_2/'+img_name+'_mask.jpeg', 0)
+    ret, bw_res = cv2.threshold(res2, 25, 250, cv2.THRESH_BINARY)
+    thresh = cv2.threshold(res2, 0, 250, cv2.THRESH_BINARY)
+
+    cv2.imwrite('/Users/vense03/Downloads/cubesat 2022_2/'+img_name+'_binary.jpeg', bw_res)
+
+    #statistics
+
+    count = cv2.countNonZero(bw_res)
+    size = bw_res.size
+    print('amount of plastic '+str(size-count))
+    print('number of total pixels '+str(size))
+    percent_of_plastic = round((size-count)/size*100, 2)
+    print(str(percent_of_plastic)+'% plastic')
+
+    picture_number += 1
+
+    with open('/Users/vense03/nbtooth/plastic_percents1.txt', 'a') as f:
+        f.write(str(percent_of_plastic)+'\n')
